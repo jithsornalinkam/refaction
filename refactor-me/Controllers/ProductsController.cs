@@ -2,12 +2,14 @@
 using System.Net;
 using System.Web.Http;
 using refactor_me.Models;
+using System.Collections.Generic;
 
 namespace refactor_me.Controllers
 {
     [RoutePrefix("products")]
     public class ProductsController : ApiController
     {
+        private ProductOptionsDAO productOptionsDAO = new ProductOptionsDAO();
         [Route]
         [HttpGet]
         public Products GetAll()
@@ -26,43 +28,36 @@ namespace refactor_me.Controllers
         [HttpGet]
         public Product GetProduct(Guid id)
         {
-            var product = new Product(id);
+            var product = productOptionsDAO.GetProduct(id);
             if (product.IsNew)
                 throw new HttpResponseException(HttpStatusCode.NotFound);
-
             return product;
         }
 
+        // POST: api/Products
         [Route]
         [HttpPost]
         public void Create(Product product)
         {
-            product.Save();
+            product.Id = Guid.NewGuid();
+            productOptionsDAO.ProductSaveOrUpdate(product);
         }
 
         [Route("{id}")]
         [HttpPut]
         public void Update(Guid id, Product product)
         {
-            var orig = new Product(id)
-            {
-                Name = product.Name,
-                Description = product.Description,
-                Price = product.Price,
-                DeliveryPrice = product.DeliveryPrice
-            };
-
-            if (!orig.IsNew)
-                orig.Save();
+            product.Id = id;
+            productOptionsDAO.ProductSaveOrUpdate(product);
         }
 
         [Route("{id}")]
         [HttpDelete]
         public void Delete(Guid id)
         {
-            var product = new Product(id);
-            product.Delete();
+            productOptionsDAO.DeleteProduct(id);
         }
+
 
         [Route("{productId}/options")]
         [HttpGet]
@@ -75,11 +70,7 @@ namespace refactor_me.Controllers
         [HttpGet]
         public ProductOption GetOption(Guid productId, Guid id)
         {
-            var option = new ProductOption(id);
-            if (option.IsNew)
-                throw new HttpResponseException(HttpStatusCode.NotFound);
-
-            return option;
+            return productOptionsDAO.GetProductOption(productId, id);
         }
 
         [Route("{productId}/options")]
@@ -87,29 +78,23 @@ namespace refactor_me.Controllers
         public void CreateOption(Guid productId, ProductOption option)
         {
             option.ProductId = productId;
-            option.Save();
+            option.Id = Guid.NewGuid();
+            productOptionsDAO.ProductOptionSaveOrUpdate(option);
         }
 
         [Route("{productId}/options/{id}")]
         [HttpPut]
         public void UpdateOption(Guid id, ProductOption option)
         {
-            var orig = new ProductOption(id)
-            {
-                Name = option.Name,
-                Description = option.Description
-            };
-
-            if (!orig.IsNew)
-                orig.Save();
+            option.Id = id;
+            productOptionsDAO.ProductOptionSaveOrUpdate(option);
         }
 
         [Route("{productId}/options/{id}")]
         [HttpDelete]
-        public void DeleteOption(Guid id)
+        public void DeleteOption(Guid productId, Guid id)
         {
-            var opt = new ProductOption(id);
-            opt.Delete();
+            productOptionsDAO.DeleteProductOption(productId, id);
         }
     }
 }
